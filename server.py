@@ -1,12 +1,29 @@
 import socket, threading, json, time
 
 HOST = "0.0.0.0"
-PORT = 1234 # Idk just sth
+PORT = 1234
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
 server.listen()
 print("Server is running!")
+
+colors = [
+    (255, 0, 0),       # red
+    (0, 255, 0),       # green
+    (0, 0, 255),       # blue
+    (255, 255, 0),     # yellow
+    (255, 165, 0),     # orange
+    (128, 0, 128),     # purple
+    (255, 105, 180),   # pink
+    (0, 255, 255),     # cyan
+    (255, 0, 255),     # magenta
+    (139, 69, 19),     # brown
+    (50, 205, 50),     # lime
+    (135, 206, 235),   # sky blue
+    (255, 215, 0),     # gold
+    (192, 192, 192),   # silver
+]
 
 clients = {}
 inputs = {}
@@ -17,13 +34,16 @@ PLAYER_SIZE = 50
 SPEED = 10
 
 def handle_client(client):
-    global clients, inputs
+    global clients, inputs, colors
+
+    username = client.recv(1024).decode()
     player_id = str(len(clients) + 1)
 
     clients[player_id] = {
         "x": 100 * int(player_id),
         "y": 100,
-        "color": [50 * int(player_id), 255 - 50 * int(player_id), 100]
+        "color": colors[(int(player_id) - 1) % len(colors)],
+        "username": username
     }
 
     inputs[player_id] = {
@@ -32,32 +52,29 @@ def handle_client(client):
         "a": False,
         "d": False
     }
-    client.send((player_id + "\n").encode())
-    print(f"Player {player_id} connected")
+    
+    client.send((json.dumps({"type": "id", "id": player_id}) + "\n").encode())
+    print(f"{username} connected ({player_id})")
 
     try:
         buffer = ""
-
         while True:
-
             data = client.recv(1024).decode()
 
-            if not data:
-                break
-
+            if not data: break
             buffer += data
 
             while "\n" in buffer:
 
                 message, buffer = buffer.split("\n", 1)
-
                 if message:
                     inputs[player_id] = json.loads(message)
     except: pass
+    
     del clients[player_id]
     del inputs[player_id]
     client.close()
-    print(f"{player_id} disconnected")
+    print(f"{username} disconnected")
     
 
 def game_loop():
@@ -75,12 +92,14 @@ def game_loop():
             clients[player_id]["x"] = max(0, min(WIDTH - PLAYER_SIZE, clients[player_id]["x"]))
             clients[player_id]["y"] = max(0, min(HEIGHT - PLAYER_SIZE, clients[player_id]["y"]))
 
-        state = (json.dumps(clients) + "\n").encode()
+        state = (json.dumps({"type": "state", "players": clients}) + "\n").encode()
+        
         dead_clients = []
         for c in connected_clients:
             try: c.send(state)
             except: dead_clients.append(c)
         
+        # Delete disconnected clients
         for dc in dead_clients:
             connected_clients.remove(dc)
 
@@ -95,7 +114,3 @@ while True:
     connected_clients.append(client)
     thread = threading.Thread(target=handle_client, args=(client,))
     thread.start()
-
-
-client.close()
-server.close()
