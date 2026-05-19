@@ -1,9 +1,5 @@
 import socket, threading, pygame, json
 
-# pygame.init()
-# pygame.display.set_mode((800, 1200))
-username = input("Enter your username: ")
-
 SERVER_IP = "127.0.0.1"
 PORT = 1234
 
@@ -18,9 +14,8 @@ clock = pygame.time.Clock()
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((SERVER_IP, PORT))
-# client.send(username.encode())
 
-player_id = client.recv(1024).decode()
+player_id = client.recv(1024).decode().strip()
 players = {}
 
 inputs = {
@@ -32,12 +27,35 @@ inputs = {
 
 def receive():
     global players
+
+    buffer = ""
+
     while True:
         try:
-            data = client.recv(1024).decode()
-            if not data: break
-            players = json.loads(data)
-        except: break
+            data = client.recv(4096).decode()
+
+            if not data:
+                break
+
+            buffer += data
+
+            while "\n" in buffer:
+
+                message, buffer = buffer.split("\n", 1)
+
+                if message:
+
+                    # FIRST packet = player id
+                    if message.isdigit():
+                        print("My ID:", message)
+
+                    # Everything else = game state
+                    else:
+                        players = json.loads(message)
+
+        except Exception as e:
+            print("Receive error:", e)
+            break
     
 threading.Thread(target=receive, daemon=True).start()
 
@@ -56,7 +74,7 @@ while running:
 
  # Send inputs to server
     try:
-        client.send(json.dumps(inputs).encode())
+        client.send((json.dumps(inputs) + "\n").encode())
     except:
         break
 

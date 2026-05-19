@@ -32,42 +32,37 @@ def handle_client(client):
         "a": False,
         "d": False
     }
-    client.send(player_id.encode())
+    client.send((player_id + "\n").encode())
     print(f"Player {player_id} connected")
 
     try:
+        buffer = ""
+
         while True:
+
             data = client.recv(1024).decode()
-            if not data: break
-            inputs[player_id] = json.loads(data)
+
+            if not data:
+                break
+
+            buffer += data
+
+            while "\n" in buffer:
+
+                message, buffer = buffer.split("\n", 1)
+
+                if message:
+                    inputs[player_id] = json.loads(message)
     except: pass
     del clients[player_id]
     del inputs[player_id]
     client.close()
     print(f"{player_id} disconnected")
     
-    # clients.append(client)
-    # username = client.recv(1024).decode()
-    # print(f"{username} connected")
-
-    # while True:
-    #     try:
-    #         data = client.recv(1024)
-    #         if not data: break
-    #         message = data.decode()
-    #         print(f"{username}: {message}")
-
-    #         for c in clients:
-    #             if c != client: c.send(f"{username}: {message}".encode())
-
-    #     except: break
-    
-    # clients.remove(client)
-    # client.close()
 
 def game_loop():
     while True:
-        for player_id in clients:
+        for player_id in list(clients):
             if inputs[player_id]["w"]:
                 clients[player_id]["y"] -= SPEED
             if inputs[player_id]["s"]:
@@ -80,7 +75,7 @@ def game_loop():
             clients[player_id]["x"] = max(0, min(WIDTH - PLAYER_SIZE, clients[player_id]["x"]))
             clients[player_id]["y"] = max(0, min(HEIGHT - PLAYER_SIZE, clients[player_id]["y"]))
 
-        state = json.dumps(clients).encode()
+        state = (json.dumps(clients) + "\n").encode()
         dead_clients = []
         for c in connected_clients:
             try: c.send(state)
