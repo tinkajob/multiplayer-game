@@ -30,7 +30,7 @@ font = pygame.font.SysFont(None, 24)
 username_surfaces = {}
 
 def receive():
-    global players, player_id, font, username_surfaces
+    global players, player_id, font, username_surfaces, bomb
     buffer = ""
 
     while True:
@@ -46,6 +46,7 @@ def receive():
 
                 if packet["type"] == "state":
                     players = packet["players"]
+                    bomb = packet["bomb"]
                     for pid, player in players.items():
                         if pid not in username_surfaces:
                             username_surfaces[pid] = font.render(player["username"], True, (255, 255, 255))
@@ -85,6 +86,7 @@ while running := True:
         pygame.draw.rect(screen, player["color"], (player["x"], player["y"], player["size"], player["size"]), border_radius=10)
         username_size = username_surfaces[player_id].get_size()
         screen.blit(username_surfaces[player_id], (player["x"] + (player["size"] / 2) - (username_size[0] / 2), player["y"] - 20))
+    pygame.draw.circle(screen, bomb["color"])
 
     pygame.display.flip()
 

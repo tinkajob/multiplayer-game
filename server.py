@@ -1,4 +1,4 @@
-import socket, threading, json, time
+import socket, threading, json, time, random
 
 HOST = "0.0.0.0"
 PORT = 1234
@@ -32,6 +32,18 @@ WIDTH = 1600
 HEIGHT = 1200
 PLAYER_SIZE = 50
 SPEED = 10
+BOMB_POS = (780, 580)
+BOMB_SIZE = 20
+
+bomb = {
+    "x": BOMB_POS[0],
+    "y": BOMB_POS[1],
+    "color": (0, 0, 0),
+    "size": 40,
+    "timer": 0, 
+    "explode_time": random.uniform(5, 20),
+    "holder": None
+}
 
 def handle_client(client):
     global clients, inputs, colors
@@ -92,7 +104,7 @@ def game_loop():
             clients[player_id]["x"] = max(0, min(WIDTH - PLAYER_SIZE, clients[player_id]["x"]))
             clients[player_id]["y"] = max(0, min(HEIGHT - PLAYER_SIZE, clients[player_id]["y"]))
 
-        state = (json.dumps({"type": "state", "players": clients}) + "\n").encode()
+        state = (json.dumps({"type": "state", "players": clients, "bomb": bomb}) + "\n").encode()
         
         dead_clients = []
         for c in connected_clients:
