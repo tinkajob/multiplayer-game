@@ -43,15 +43,16 @@ def receive():
             while "\n" in buffer:
                 message, buffer = buffer.split("\n", 1)
                 packet = json.loads(message)
-                if packet["type"] == "id":
-                    player_id = packet["id"]
-                    print("My ID:", player_id)
 
-                elif packet["type"] == "state":
+                if packet["type"] == "state":
                     players = packet["players"]
                     for pid, player in players.items():
                         if pid not in username_surfaces:
                             username_surfaces[pid] = font.render(player["username"], True, (255, 255, 255))
+                
+                elif packet["type"] == "id":
+                    player_id = packet["id"]
+                    print("My ID:", player_id)
 
         except Exception as e:
             print("Receive error:", e)
@@ -81,8 +82,9 @@ while running := True:
     screen.fill((30, 30, 30))
 
     for player_id, player in players.items():
-        pygame.draw.rect(screen, player["color"], (player["x"], player["y"], 50, 50), border_radius=10)
-        screen.blit(username_surfaces[player_id], (player["x"], player["y"] - 20))
+        pygame.draw.rect(screen, player["color"], (player["x"], player["y"], player["size"], player["size"]), border_radius=10)
+        username_size = username_surfaces[player_id].get_size()
+        screen.blit(username_surfaces[player_id], (player["x"] + (player["size"] / 2) - (username_size[0] / 2), player["y"] - 20))
 
     pygame.display.flip()
 

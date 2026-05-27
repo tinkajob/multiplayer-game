@@ -28,8 +28,8 @@ colors = [
 clients = {}
 inputs = {}
 
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 1600
+HEIGHT = 1200
 PLAYER_SIZE = 50
 SPEED = 10
 
@@ -42,6 +42,7 @@ def handle_client(client):
     clients[player_id] = {
         "x": 100 * int(player_id),
         "y": 100,
+        "size": 50,
         "color": colors[(int(player_id) - 1) % len(colors)],
         "username": username
     }
@@ -76,7 +77,6 @@ def handle_client(client):
     client.close()
     print(f"{username} disconnected")
     
-
 def game_loop():
     while True:
         for player_id in list(clients):
