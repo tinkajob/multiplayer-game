@@ -41,15 +41,6 @@ def receive():
             packet, buffer = receive_packet(client, buffer)
             
             if packet is None: break
-                        
-            # data = client.recv(4096).decode()
-
-            # if not data: break
-            # buffer += data
-
-            # while "\n" in buffer:
-            #     message, buffer = buffer.split("\n", 1)
-            #     packet = json.loads(message)
 
             if packet["type"] == "state":
                 players = packet["players"]
