@@ -1,4 +1,6 @@
 import socket, threading, pygame, json
+from utils.utils import receive_packet
+pygame.init()
 
 username = input("Enter your usename: ")
 
@@ -9,16 +11,9 @@ client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((SERVER_IP, PORT))
 client.send(username.encode())
 
-WIDTH = 800
-HEIGHT = 600
-
-pygame.init()
-screen = pygame.display.set_mode((WIDTH,  HEIGHT))
-pygame.display.set_caption("Pass the Bomb!")
-
 clock = pygame.time.Clock()
-player_id = None
 players = {}
+bomb = {"x": 0, "y": 0, "r": 20, "color": (0, 0, 0)}
 inputs = {
     "w": False,
     "s": False,
@@ -26,34 +21,42 @@ inputs = {
     "d": False,
 }
 
+packet, buffer = receive_packet(client, buffer="")
+player_id = packet["id"]
+WIDTH = packet["width"]
+HEIGHT = packet["height"]
+
+screen = pygame.display.set_mode((WIDTH,  HEIGHT))
+pygame.display.set_caption("Pass the Bomb!")
+
 font = pygame.font.SysFont(None, 24)
 username_surfaces = {}
 
 def receive():
-    global players, player_id, font, username_surfaces, bomb
+    global players, font, username_surfaces, bomb
     buffer = ""
 
     while True:
         try:
-            data = client.recv(4096).decode()
+            packet, buffer = receive_packet(client, buffer)
+            
+            if packet is None: break
+                        
+            # data = client.recv(4096).decode()
 
-            if not data: break
-            buffer += data
+            # if not data: break
+            # buffer += data
 
-            while "\n" in buffer:
-                message, buffer = buffer.split("\n", 1)
-                packet = json.loads(message)
+            # while "\n" in buffer:
+            #     message, buffer = buffer.split("\n", 1)
+            #     packet = json.loads(message)
 
-                if packet["type"] == "state":
-                    players = packet["players"]
-                    bomb = packet["bomb"]
-                    for pid, player in players.items():
-                        if pid not in username_surfaces:
-                            username_surfaces[pid] = font.render(player["username"], True, (255, 255, 255))
-                
-                elif packet["type"] == "id":
-                    player_id = packet["id"]
-                    print("My ID:", player_id)
+            if packet["type"] == "state":
+                players = packet["players"]
+                bomb = packet["bomb"]
+                for pid, player in players.items():
+                    if pid not in username_surfaces:
+                        username_surfaces[pid] = font.render(player["username"], True, (255, 255, 255))
 
         except Exception as e:
             print("Receive error:", e)
@@ -86,7 +89,7 @@ while running := True:
         pygame.draw.rect(screen, player["color"], (player["x"], player["y"], player["size"], player["size"]), border_radius=10)
         username_size = username_surfaces[player_id].get_size()
         screen.blit(username_surfaces[player_id], (player["x"] + (player["size"] / 2) - (username_size[0] / 2), player["y"] - 20))
-    pygame.draw.circle(screen, bomb["color"])
+    pygame.draw.circle(screen, bomb["color"], (bomb["x"], bomb["y"]), bomb["r"])
 
     pygame.display.flip()
 

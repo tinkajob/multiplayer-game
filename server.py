@@ -29,17 +29,17 @@ clients = {}
 inputs = {}
 
 WIDTH = 1600
-HEIGHT = 1200
+HEIGHT = 1000
 PLAYER_SIZE = 50
 SPEED = 10
-BOMB_POS = (780, 580)
 BOMB_SIZE = 20
+BOMB_POS = (WIDTH / 2 - BOMB_SIZE / 2, HEIGHT / 2 - BOMB_SIZE / 2)
 
 bomb = {
     "x": BOMB_POS[0],
     "y": BOMB_POS[1],
     "color": (0, 0, 0),
-    "size": 40,
+    "r": BOMB_SIZE,
     "timer": 0, 
     "explode_time": random.uniform(5, 20),
     "holder": None
@@ -65,8 +65,8 @@ def handle_client(client):
         "a": False,
         "d": False
     }
-    
-    client.send((json.dumps({"type": "id", "id": player_id}) + "\n").encode())
+
+    client.send((json.dumps({"type": "id", "id": player_id, "width": WIDTH, "height": HEIGHT}) + "\n").encode())
     print(f"{username} connected ({player_id})")
 
     try:
