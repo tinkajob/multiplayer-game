@@ -73,7 +73,8 @@ while running := True:
     except:
         break
 
-    # Draw
+    # Draw scene
+    pygame.display.flip()
     screen.fill((30, 30, 30))
 
     for player_id, player in players.items():
@@ -82,7 +83,7 @@ while running := True:
         screen.blit(username_surfaces[player_id], (player["x"] + (player["size"] / 2) - (username_size[0] / 2), player["y"] - 20))
     pygame.draw.circle(screen, bomb["color"], (bomb["x"], bomb["y"]), bomb["r"])
 
-    pygame.display.flip()
+    
 
 pygame.quit()
 client.close()

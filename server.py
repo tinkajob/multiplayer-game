@@ -92,14 +92,15 @@ def handle_client(client):
 def game_loop():
     while True:
         for player_id in list(clients):
-            if inputs[player_id]["w"]:
-                clients[player_id]["y"] -= SPEED
-            if inputs[player_id]["s"]:
-                clients[player_id]["y"] += SPEED
-            if inputs[player_id]["a"]:
-                clients[player_id]["x"] -= SPEED
-            if inputs[player_id]["d"]:
-                clients[player_id]["x"] += SPEED
+            # Get button presses
+            pressed_UP = inputs[player_id]["w"]
+            pressed_DOWN = inputs[player_id]["s"]
+            pressed_LEFT = inputs[player_id]["a"]
+            pressed_RIGHT = inputs[player_id]["d"]
+
+            # Normalize player movement (diagonal) and clamp to prevent going off-screen
+            clients[player_id]["x"] += (pressed_RIGHT - pressed_LEFT) / abs(1 + 0.41 * abs(pressed_DOWN - pressed_UP)) * SPEED
+            clients[player_id]["y"] += (pressed_DOWN - pressed_UP) / abs(1 + 0.41 * abs(pressed_RIGHT - pressed_LEFT)) * SPEED
             
             clients[player_id]["x"] = max(0, min(WIDTH - PLAYER_SIZE, clients[player_id]["x"]))
             clients[player_id]["y"] = max(0, min(HEIGHT - PLAYER_SIZE, clients[player_id]["y"]))
