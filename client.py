@@ -2,7 +2,7 @@ import socket, threading, pygame, json
 from utils.utils import receive_packet
 pygame.init()
 
-username = input("Enter your usename: ")
+username = "tinkajob" #input("Enter your usename: ")
 
 # ========== NETWORKING ==========
 SERVER_IP = "127.0.0.1"
@@ -29,7 +29,7 @@ HEIGHT = packet["height"]
 screen = pygame.display.set_mode((WIDTH,  HEIGHT))
 pygame.display.set_caption("Pass the Bomb!")
 
-font = pygame.font.SysFont(None, 24)
+font = pygame.font.SysFont("", 24)
 username_surfaces = {}
 
 def receive():
@@ -55,7 +55,8 @@ def receive():
     
 threading.Thread(target=receive, daemon=True).start()
 
-while running := True:
+running = True
+while running:
     clock.tick(60)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -67,6 +68,9 @@ while running := True:
     inputs["s"] = keys[pygame.K_s]
     inputs["a"] = keys[pygame.K_a]
     inputs["d"] = keys[pygame.K_d]
+    inputs["space"] = keys[pygame.K_SPACE]
+    inputs["mouse_x"] = pygame.mouse.get_pos()[0]
+    inputs["mouse_y"] = pygame.mouse.get_pos()[1]
 
     try:
         client.send((json.dumps(inputs) + "\n").encode())
@@ -82,8 +86,6 @@ while running := True:
         username_size = username_surfaces[player_id].get_size()
         screen.blit(username_surfaces[player_id], (player["x"] + (player["size"] / 2) - (username_size[0] / 2), player["y"] - 20))
     pygame.draw.circle(screen, bomb["color"], (bomb["x"], bomb["y"]), bomb["r"])
-
-    
 
 pygame.quit()
 client.close()
