@@ -71,6 +71,7 @@ while running:
     inputs["space"] = keys[pygame.K_SPACE]
     inputs["mouse_x"] = pygame.mouse.get_pos()[0]
     inputs["mouse_y"] = pygame.mouse.get_pos()[1]
+    inputs["mouse_pressed"] = pygame.mouse.get_pressed()[0]
 
     try:
         client.send((json.dumps(inputs) + "\n").encode())

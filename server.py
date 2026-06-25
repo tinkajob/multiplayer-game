@@ -75,6 +75,7 @@ def handle_client(client):
         "space": False,
         "mouse_x": 0, 
         "mouse_y": 0,
+        "mouse_pressed": False
     }
 
     client.send((json.dumps({"type": "id", "id": player_id, "width": WIDTH, "height": HEIGHT}) + "\n").encode())
@@ -131,8 +132,8 @@ def game_loop():
                 bomb["x"] = px + PLAYER_SIZE / 2
                 bomb["y"] = py + PLAYER_SIZE / 2
 
-                if inputs[player_id]["space"]:
-                    # Naredi da ti ustreli v smeri miške in da mors kliknt (space nej bo kasn dash), in vec cajta ku drzis bol mocno vrzes (da chargas shot)
+                if inputs[player_id]["mouse_pressed"]:
+                    # Naredi da ti ustreli v smeri miske (space nej bo kasn dash), in vec cajta ku drzis bol mocno vrzes (da chargas shot)
                     bomb["holder"] = None
                     bomb["vel_x"] = player_vel_x * 2
                     bomb["vel_y"] = player_vel_y * 2
