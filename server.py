@@ -32,9 +32,12 @@ inputs = {}
 WIDTH = 1600
 HEIGHT = 1000
 PLAYER_SIZE = 50
-SPEED = 10
+SPEED = 8
 BOMB_SIZE = 20
 BOMB_POS = (WIDTH / 2 - BOMB_SIZE / 2, HEIGHT / 2 - BOMB_SIZE / 2)
+
+max_player_charge = 35
+throw_charge_rate = 0.5
 
 def make_player(player_id, username):
     return {
@@ -43,7 +46,10 @@ def make_player(player_id, username):
         "size": 50,
         "color": colors[(int(player_id) - 1) % len(colors)],
         "username": username,
-        "has_bomb": False
+        "has_bomb": False,
+        "throw_charge": 0,
+        "vel_x": 0,
+        "vel_y": 0
     }
 
 bomb = {
@@ -100,6 +106,7 @@ def handle_client(client):
     print(f"{username} disconnected")
     
 def game_loop():
+
     while True:
         delta_time = clock.tick(60) / 1000.0
         for player_id in list(clients):
@@ -108,38 +115,49 @@ def game_loop():
             pressed_DOWN = inputs[player_id]["s"]
             pressed_LEFT = inputs[player_id]["a"]
             pressed_RIGHT = inputs[player_id]["d"]
+            pressed_MOUSE = inputs[player_id]["mouse_pressed"]
 
             player = clients[player_id]
 
             # Normalize player movement (diagonal) and clamp to prevent going off-screen
-            player_vel_x = (pressed_RIGHT - pressed_LEFT) / abs(1 + 0.41 * abs(pressed_DOWN - pressed_UP)) * SPEED
-            player_vel_y = (pressed_DOWN - pressed_UP) / abs(1 + 0.41 * abs(pressed_RIGHT - pressed_LEFT)) * SPEED
+            player["vel_x"] = (pressed_RIGHT - pressed_LEFT) / abs(1 + 0.41 * abs(pressed_DOWN - pressed_UP)) * SPEED if pressed_LEFT or pressed_RIGHT else player["vel_x"] * 0.9
+            player["vel_y"] = (pressed_DOWN - pressed_UP) / abs(1 + 0.41 * abs(pressed_RIGHT - pressed_LEFT)) * SPEED if pressed_DOWN or pressed_UP else player["vel_y"] * 0.9
             
-            player["x"] = max(0, min(WIDTH - PLAYER_SIZE, player["x"] + player_vel_x))
-            player["y"] = max(0, min(HEIGHT - PLAYER_SIZE, player["y"] + player_vel_y))
+            player["x"] = max(0, min(WIDTH - PLAYER_SIZE, player["x"] + player["vel_x"]))
+            player["y"] = max(0, min(HEIGHT - PLAYER_SIZE, player["y"] + player["vel_y"]))
 
             px, py = player["x"], player["y"]
             
             if bomb["holder"] is None:
                 bx, by = bomb["x"], bomb["y"]
                 dist_sq = (px + PLAYER_SIZE / 2 - bx) ** 2 + (py + PLAYER_SIZE / 2 - by) ** 2
-                if dist_sq <= (bomb["r"] * 1.5) ** 2 and bomb["pickup_cooldown"] <= 0:
+                if dist_sq <= (bomb["r"] * 1.75) ** 2 and bomb["pickup_cooldown"] <= 0:
                     bomb["holder"] = player_id
                     bomb["vel_x"] = 0
                     bomb["vel_y"] = 0
 
+            # If the player holds the bomb
             if bomb["holder"] == player_id:
-                bomb["x"] = px + PLAYER_SIZE / 2
-                bomb["y"] = py + PLAYER_SIZE / 2
+                dist_x = inputs[player_id]["mouse_x"] - px - PLAYER_SIZE / 2
+                dist_y = inputs[player_id]["mouse_y"] - py - PLAYER_SIZE / 2
+                dist = abs(dist_x) + abs(dist_y)
+                factor_x = dist_x / dist
+                factor_y = dist_y / dist
+                bomb["x"] = px + PLAYER_SIZE / 2 + (15 * min((dist / 500), 1) * factor_x)
+                bomb["y"] = py + PLAYER_SIZE / 2 + (15 * min((dist / 500), 1) * factor_y)
 
-                if inputs[player_id]["mouse_pressed"]:
-                    # Naredi da ti ustreli v smeri miske (space nej bo kasn dash), in vec cajta ku drzis bol mocno vrzes (da chargas shot)
+                if pressed_MOUSE:
+                    clients[player_id]["throw_charge"] = min(max_player_charge, clients[player_id]["throw_charge"] + throw_charge_rate)
+
+                elif clients[player_id]["throw_charge"] > 0:
                     bomb["holder"] = None
-                    bomb["vel_x"] = player_vel_x * 2
-                    bomb["vel_y"] = player_vel_y * 2
+                    bomb["vel_x"] = player["vel_x"] + max(clients[player_id]["throw_charge"], 8) * factor_x
+                    bomb["vel_y"] = player["vel_y"] + max(clients[player_id]["throw_charge"], 8) * factor_y
                     bomb["x"] += bomb["vel_x"]
                     bomb["y"] += bomb["vel_y"]
                     bomb["pickup_cooldown"] = 0.5
+            
+            else: clients[player_id]["throw_charge"] = 0
         
         # UPDATE BOMB
         if bomb["x"] + bomb["r"] > WIDTH or bomb["x"] - bomb["r"] < 0: bomb["vel_x"] *= (-1)
@@ -161,8 +179,6 @@ def game_loop():
         for dc in dead_clients:
             connected_clients.remove(dc)
 
-        # time.sleep(1/60)
-
 connected_clients = []
 threading.Thread(target=game_loop, daemon=True).start()
 
@@ -171,3 +187,8 @@ while True:
     connected_clients.append(client)
     thread = threading.Thread(target=handle_client, args=(client,))
     thread.start()
+
+# The bomb is constantly ticking, and nobody sees the timer (always decreasing) 
+# when holding the bomb you can see the timer but it's ticking at 1.5 speed (or sth) 
+# when charging shot it removes your charge from the bombs timer and the more you charge bigger mult you get 
+# for points (holding bomb gives points but slowly) and the bomb also ticks with that mult (or myb not)

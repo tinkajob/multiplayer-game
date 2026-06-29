@@ -2,7 +2,7 @@ import socket, threading, pygame, json
 from utils.utils import receive_packet
 pygame.init()
 
-username = "tinkajob" #input("Enter your usename: ")
+username = input("Enter your usename: ")#"tinkajob"
 
 # ========== NETWORKING ==========
 SERVER_IP = "127.0.0.1"
